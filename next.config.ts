@@ -1,9 +1,18 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
-  cacheComponents: true,
-  partialPrefetching: true,
+  images: {
+    remotePatterns: [
+      {
+        protocol: "https",
+        hostname: "*.public.blob.vercel-storage.com", // Vercel Blob
+      },
+      {
+        protocol: "https",
+        hostname: "lh3.googleusercontent.com", // Google avatars (NextAuth)
+      },
+    ],
+  },
   turbopack: {
     rules: {
       "*.css": {
