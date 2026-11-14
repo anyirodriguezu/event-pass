@@ -1,28 +1,24 @@
-// ISR — se regenera cada 60 segundos en Vercel
+// ISR + unstable_cache — datos cacheados con tags semánticos
+// revalidateTag("events") invalida el cache al publicar un evento nuevo
+// sin necesidad de esperar el tiempo de revalidación
 import type { Metadata } from "next";
 import { Suspense } from "react";
-import { db } from "@/lib/db";
-import { events, organizers } from "@/lib/db/schema";
-import { eq, desc } from "drizzle-orm";
 import { EventCard } from "@/components/events/EventCard";
 import { EventFilters } from "@/components/events/EventFilters";
 import { Skeleton } from "@/components/ui/skeleton";
+import { getPublishedEvents } from "@/lib/queries";
 
 export const metadata: Metadata = {
   title: "Eventos",
   description: "Descubre los mejores eventos cerca de ti",
 };
 
-export const revalidate = 60;
+// revalidate como fallback — unstable_cache ya maneja la invalidación por tags
+export const revalidate = 300;
 
 async function EventsList({ category }: { category?: string }) {
-  const rows = await db
-    .select()
-    .from(events)
-    .leftJoin(organizers, eq(events.organizerId, organizers.id))
-    .where(eq(events.status, "PUBLISHED"))
-    .orderBy(desc(events.startsAt))
-    .limit(50);
+  // getPublishedEvents está cacheada — no hace query a Neon si el cache está vigente
+  const rows = await getPublishedEvents();
 
   const filtered = category
     ? rows.filter((r) => r.events.category === category.toUpperCase())

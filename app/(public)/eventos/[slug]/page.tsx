@@ -1,20 +1,21 @@
-// ISR + PPR — shell estático pre-renderizado, partes dinámicas en streaming
+// ISR + PPR + unstable_cache — shell estático pre-renderizado, partes dinámicas en streaming
 // generateStaticParams pre-genera las páginas de eventos publicados en build time
+// getEventBySlug y getTicketTypes usan unstable_cache con tag "events"
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import { db } from "@/lib/db";
-import { events, organizers, ticketTypes } from "@/lib/db/schema";
-import { eq, and } from "drizzle-orm";
+import { events, ticketTypes } from "@/lib/db/schema";
+import { eq } from "drizzle-orm";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TicketSelector } from "@/components/tickets/TicketSelector";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
+import { getEventBySlug, getTicketTypes } from "@/lib/queries";
 
-// ISR: revalida cada 30 segundos
-export const revalidate = 30;
+export const revalidate = 300;
 
 // generateStaticParams: pre-genera en build time los slugs de eventos publicados
 // Next.js llama a esta función en build y genera una página estática por cada slug
@@ -27,18 +28,16 @@ export async function generateStaticParams() {
   return publishedEvents.map((e) => ({ slug: e.slug }));
 }
 
-// generateMetadata: SEO dinámico — título y descripción únicos por evento
+// generateMetadata usa getEventBySlug cacheada — misma query, sin round-trip extra a Neon
 export async function generateMetadata({
   params,
 }: {
   params: Promise<{ slug: string }>;
 }): Promise<Metadata> {
   const { slug } = await params;
-  const event = await db.query.events.findFirst({
-    where: eq(events.slug, slug),
-  });
-
-  if (!event) return { title: "Evento no encontrado" };
+  const row = await getEventBySlug(slug);
+  if (!row) return { title: "Evento no encontrado" };
+  const { events: event } = row;
 
   return {
     title: event.title,
@@ -51,13 +50,10 @@ export async function generateMetadata({
   };
 }
 
-// Componente dinámico: se hace streaming mientras el shell ya está visible
+// Componente dinámico: streaming mientras el shell ya está visible
+// getTicketTypes también cacheada — no duplica la query entre renders
 async function TicketAvailability({ eventId }: { eventId: string }) {
-  const types = await db
-    .select()
-    .from(ticketTypes)
-    .where(eq(ticketTypes.eventId, eventId));
-
+  const types = await getTicketTypes(eventId);
   return <TicketSelector ticketTypes={types} eventId={eventId} />;
 }
 
@@ -68,16 +64,12 @@ export default async function EventDetailPage({
 }) {
   const { slug } = await params;
 
-  const row = await db
-    .select()
-    .from(events)
-    .leftJoin(organizers, eq(events.organizerId, organizers.id))
-    .where(and(eq(events.slug, slug), eq(events.status, "PUBLISHED")))
-    .limit(1);
+  // getEventBySlug: primera vez → query a Neon; siguientes requests → del cache
+  // Se invalida automáticamente con revalidateTag("events") al publicar cambios
+  const row = await getEventBySlug(slug);
+  if (!row) notFound();
 
-  if (row.length === 0) notFound();
-
-  const { events: event, organizers: organizer } = row[0];
+  const { events: event, organizers: organizer } = row;
 
   return (
     <div className="max-w-4xl mx-auto px-4 py-10 space-y-8">

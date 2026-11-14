@@ -4,7 +4,7 @@ import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { events, organizers, ticketTypes } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
-import { revalidatePath } from "next/cache";
+import { revalidatePath, updateTag } from "next/cache";
 import { redirect } from "next/navigation";
 import { uploadEventCover } from "@/lib/blob";
 import { z } from "zod";
@@ -93,10 +93,15 @@ export async function publishEvent(eventId: string) {
     .set({ status: "PUBLISHED" })
     .where(eq(events.id, eventId));
 
-  // On-demand ISR: invalida la caché del listado de eventos y el detalle
-  // Next.js regenerará las páginas en el próximo request
+  // revalidatePath: invalida la página completa (ISR on-demand)
   revalidatePath("/eventos");
-  revalidatePath(`/eventos/${eventId}`);
+  revalidatePath(`/organizer/${eventId}`);
+
+  // revalidateTag: invalida todas las queries cacheadas con ese tag
+  // Más preciso que revalidatePath — afecta solo los datos, no toda la página
+  // updateTag: versión de revalidateTag para Server Actions (Next.js 16)
+  // Lee-tu-propio-write semantics — invalida de inmediato en la misma request
+  updateTag("events");
 }
 
 export async function addTicketType(eventId: string, formData: FormData) {
