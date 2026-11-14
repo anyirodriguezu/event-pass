@@ -66,7 +66,7 @@ export const users = pgTable("users", {
 // Tabla requerida por NextAuth v5 con Drizzle Adapter
 // El DrizzleAdapter de NextAuth v5 requiere estos nombres de columna exactos
 export const accounts = pgTable("accounts", {
-  userId: text("userId")
+  userId: uuid("userId")
     .notNull()
     .references(() => users.id, { onDelete: "cascade" }),
   type: text("type").notNull(),
