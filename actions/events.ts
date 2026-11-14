@@ -5,6 +5,8 @@ import { db } from "@/lib/db";
 import { events, organizers, ticketTypes } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { revalidatePath, updateTag } from "next/cache";
+import { after } from "next/server";
+import { trackEventCreated } from "@/lib/analytics";
 import { redirect } from "next/navigation";
 import { uploadEventCover } from "@/lib/blob";
 import { z } from "zod";
@@ -80,6 +82,12 @@ export async function createEvent(
       category: parsed.data.category,
     })
     .returning();
+
+  // after(): corre después del redirect — sin after() este código nunca ejecutaría
+  // porque redirect() lanza una excepción interna que termina la función
+  after(async () => {
+    await trackEventCreated(newEvent.id, slug, organizer.id);
+  });
 
   redirect(`/organizer/${newEvent.id}`);
 }

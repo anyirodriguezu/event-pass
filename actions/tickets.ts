@@ -42,7 +42,7 @@ export async function initiateTransfer(ticketId: string) {
   revalidatePath("/dashboard");
 
   return {
-    transferUrl: `${process.env.NEXT_PUBLIC_APP_URL}/transfer/${token}`,
+    transferUrl: `${process.env.APP_URL}/transfer/${token}`,
   };
 }
 

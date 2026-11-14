@@ -100,7 +100,7 @@ export async function POST(req: NextRequest) {
       eventDate: eventData.startsAt.toLocaleDateString("es-PE"),
       venueName: eventData.venueName,
       ticketType: ticketType.name,
-      qrUrl: `${process.env.NEXT_PUBLIC_APP_URL}/dashboard/ticket/${newTickets[0].id}`,
+      qrUrl: `${process.env.APP_URL}/dashboard/ticket/${newTickets[0].id}`,
       ticketId: newTickets[0].id,
     });
   }

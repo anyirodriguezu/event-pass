@@ -45,7 +45,7 @@ export async function GET(req: NextRequest) {
     return NextResponse.json({ error: "No hay suficientes tickets disponibles" }, { status: 400 });
   }
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL!;
+  const appUrl = process.env.APP_URL!;
 
   const checkoutSession = await createCheckoutSession({
     eventId,

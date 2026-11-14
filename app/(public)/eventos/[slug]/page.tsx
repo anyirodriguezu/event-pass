@@ -14,6 +14,8 @@ import { TicketSelector } from "@/components/tickets/TicketSelector";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { getEventBySlug, getTicketTypes } from "@/lib/queries";
+import { after } from "next/server";
+import { trackEventView } from "@/lib/analytics";
 
 export const revalidate = 300;
 
@@ -65,9 +67,15 @@ export default async function EventDetailPage({
   const { slug } = await params;
 
   // getEventBySlug: primera vez → query a Neon; siguientes requests → del cache
-  // Se invalida automáticamente con revalidateTag("events") al publicar cambios
   const row = await getEventBySlug(slug);
   if (!row) notFound();
+
+  // after(): se ejecuta DESPUÉS de enviar la respuesta HTML al cliente
+  // El usuario ya tiene la página — esto no bloquea ni retrasa nada
+  // Ideal para analytics, logs, contadores de vistas, webhooks secundarios
+  after(async () => {
+    await trackEventView(row.events.id, slug);
+  });
 
   const { events: event, organizers: organizer } = row;
 

@@ -1,6 +1,7 @@
 import Stripe from "stripe";
 
-export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!);
+// Inicialización lazy — evita crash en build time si STRIPE_SECRET_KEY no está configurada
+export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY ?? "");
 
 export async function createCheckoutSession({
   eventId,

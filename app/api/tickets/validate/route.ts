@@ -1,5 +1,4 @@
-// Edge Function — se ejecuta en la red edge de Vercel (latencia mínima en puerta)
-// Valida el QR y hace check-in del ticket
+// Node.js runtime — Edge Runtime fue deprecado en Next.js 16
 import { db } from "@/lib/db";
 import { tickets, users } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
@@ -7,7 +6,7 @@ import { qrScanRateLimit } from "@/lib/redis";
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 
-export const runtime = "edge";
+export const runtime = "nodejs";
 
 export async function POST(req: NextRequest) {
   const session = await auth();
