@@ -1,6 +1,10 @@
 import { Resend } from "resend";
 
-const resend = new Resend(process.env.RESEND_API_KEY);
+let _resend: Resend | undefined;
+function getInstance() {
+  if (!_resend) _resend = new Resend(process.env.RESEND_API_KEY);
+  return _resend;
+}
 
 export async function sendTicketConfirmation({
   to,
@@ -21,7 +25,7 @@ export async function sendTicketConfirmation({
   qrUrl: string;
   ticketId: string;
 }) {
-  return resend.emails.send({
+  return getInstance().emails.send({
     from: "EventPass <tickets@eventpass.app>",
     to,
     subject: `Tu ticket para ${eventTitle}`,
@@ -60,7 +64,7 @@ export async function sendEventReminder({
   eventDate: string;
   venueName: string;
 }) {
-  return resend.emails.send({
+  return getInstance().emails.send({
     from: "EventPass <noreply@eventpass.app>",
     to,
     subject: `Recordatorio: ${eventTitle} es mañana`,

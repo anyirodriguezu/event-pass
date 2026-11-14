@@ -3,7 +3,7 @@ import { db } from "@/lib/db";
 import { events, ticketTypes, orders } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { createCheckoutSession } from "@/lib/stripe";
-import { checkoutRateLimit } from "@/lib/redis";
+import { getCheckoutRateLimit } from "@/lib/redis";
 import { NextRequest, NextResponse } from "next/server";
 
 export async function GET(req: NextRequest) {
@@ -14,7 +14,7 @@ export async function GET(req: NextRequest) {
 
   // Rate limiting con Vercel KV (Upstash Redis)
   const ip = req.headers.get("x-forwarded-for") ?? "anonymous";
-  const { success } = await checkoutRateLimit.limit(ip);
+  const { success } = await getCheckoutRateLimit().limit(ip);
   if (!success) {
     return NextResponse.json(
       { error: "Demasiados intentos. Intenta en unos minutos." },

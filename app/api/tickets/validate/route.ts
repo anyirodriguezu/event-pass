@@ -2,7 +2,7 @@
 import { db } from "@/lib/db";
 import { tickets, users } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
-import { qrScanRateLimit } from "@/lib/redis";
+import { getQrScanRateLimit } from "@/lib/redis";
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
 
@@ -16,7 +16,7 @@ export async function POST(req: NextRequest) {
 
   // Rate limiting: máximo 20 scans por dispositivo por minuto (anti-fraude)
   const deviceId = req.headers.get("x-device-id") ?? session.user.id;
-  const { success } = await qrScanRateLimit.limit(deviceId);
+  const { success } = await getQrScanRateLimit().limit(deviceId);
   if (!success) {
     return NextResponse.json(
       { error: "Demasiados escaneos. Espera un momento." },

@@ -1,7 +1,19 @@
 import Stripe from "stripe";
 
-// Inicialización lazy — evita crash en build time si STRIPE_SECRET_KEY no está configurada
-export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY ?? "");
+// Proxy lazy — Stripe no se instancia al importar el módulo sino al primer uso
+// Esto evita el crash en build time cuando STRIPE_SECRET_KEY no está configurada
+let _instance: Stripe | undefined;
+
+function getInstance(): Stripe {
+  if (!_instance) _instance = new Stripe(process.env.STRIPE_SECRET_KEY!);
+  return _instance;
+}
+
+export const stripe: Stripe = new Proxy({} as Stripe, {
+  get(_target, prop: string) {
+    return (getInstance() as any)[prop];
+  },
+});
 
 export async function createCheckoutSession({
   eventId,
@@ -26,15 +38,12 @@ export async function createCheckoutSession({
 }) {
   return stripe.checkout.sessions.create({
     mode: "payment",
-
     line_items: [
       {
         price_data: {
           currency: "pen",
-          product_data: {
-            name: `${eventTitle} — ${ticketTypeName}`,
-          },
-          unit_amount: Math.round(unitPrice * 100), // Stripe usa centavos
+          product_data: { name: `${eventTitle} — ${ticketTypeName}` },
+          unit_amount: Math.round(unitPrice * 100),
         },
         quantity,
       },
