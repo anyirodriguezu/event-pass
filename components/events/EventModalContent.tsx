@@ -3,7 +3,6 @@
 import { useRouter } from "next/navigation";
 import { useEffect } from "react";
 import Image from "next/image";
-import Link from "next/link";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { format } from "date-fns";
@@ -118,10 +117,12 @@ export function EventModalContent({
           >
             Cerrar
           </Button>
-          <Button variant="gradient" className="flex-1" asChild>
-            <Link href={`/eventos/${event.slug}`}>
-              Ver evento completo →
-            </Link>
+          <Button
+            variant="gradient"
+            className="flex-1"
+            onClick={() => { window.location.href = `/eventos/${event.slug}`; }}
+          >
+            Ver evento completo →
           </Button>
         </div>
       </div>

@@ -1,9 +1,8 @@
 "use client";
 
-// Client Component — maneja el estado de carga mientras redirige a Stripe
-// No necesita fetch: Stripe Checkout es una redirección GET
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
+import { ShieldCheck, Loader2 } from "lucide-react";
 
 export function CheckoutForm({
   checkoutUrl,
@@ -23,16 +22,26 @@ export function CheckoutForm({
     <div className="space-y-3">
       <Button
         variant="gradient"
-        className="w-full h-12 text-base"
+        className="w-full h-12 text-base font-semibold rounded-xl relative overflow-hidden"
         onClick={handleCheckout}
         disabled={loading}
       >
-        {loading
-          ? "Redirigiendo a Stripe..."
-          : `Pagar S/ ${total.toFixed(2)} con Stripe`}
+        {loading ? (
+          <span className="flex items-center gap-2">
+            <Loader2 className="size-4 animate-spin" />
+            Redirigiendo a Stripe...
+          </span>
+        ) : (
+          <>
+            Pagar S/ {total.toFixed(2)}
+            {/* shimmer on hover */}
+            <span className="absolute inset-0 opacity-0 hover:opacity-100 animate-shimmer transition-opacity duration-300" />
+          </>
+        )}
       </Button>
+
       <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
-        <span>🔒</span>
+        <ShieldCheck className="size-3.5 text-emerald-500" />
         <span>Pago seguro procesado por Stripe</span>
       </div>
     </div>

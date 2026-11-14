@@ -44,7 +44,7 @@ export default async function CheckoutPage({
   }
 
   const total = Number(ticketType.price) * qty;
-  const checkoutUrl = `/api/checkout?eventId=${eventId}&ticketTypeId=${ticketTypeId}&quantity=${qty}`;
+  const checkoutUrl = `/checkout/pago?eventId=${eventId}&ticketTypeId=${ticketTypeId}&quantity=${qty}`;
 
   return (
     <div className="max-w-md mx-auto px-4 py-10 space-y-6">

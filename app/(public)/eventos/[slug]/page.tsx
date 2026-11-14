@@ -1,12 +1,9 @@
-// ISR + PPR + unstable_cache — shell estático pre-renderizado, partes dinámicas en streaming
-// generateStaticParams pre-genera las páginas de eventos publicados en build time
-// getEventBySlug y getTicketTypes usan unstable_cache con tag "events"
 import type { Metadata } from "next";
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import Image from "next/image";
 import { db } from "@/lib/db";
-import { events, ticketTypes } from "@/lib/db/schema";
+import { events } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -16,21 +13,18 @@ import { es } from "date-fns/locale";
 import { getEventBySlug, getTicketTypes } from "@/lib/queries";
 import { after } from "next/server";
 import { trackEventView } from "@/lib/analytics";
+import { CalendarDays, MapPin, Mic2 } from "lucide-react";
 
 export const revalidate = 300;
 
-// generateStaticParams: pre-genera en build time los slugs de eventos publicados
-// Next.js llama a esta función en build y genera una página estática por cada slug
 export async function generateStaticParams() {
   const publishedEvents = await db
     .select({ slug: events.slug })
     .from(events)
     .where(eq(events.status, "PUBLISHED"));
-
   return publishedEvents.map((e) => ({ slug: e.slug }));
 }
 
-// generateMetadata usa getEventBySlug cacheada — misma query, sin round-trip extra a Neon
 export async function generateMetadata({
   params,
 }: {
@@ -40,7 +34,6 @@ export async function generateMetadata({
   const row = await getEventBySlug(slug);
   if (!row) return { title: "Evento no encontrado" };
   const { events: event } = row;
-
   return {
     title: event.title,
     description: `${event.title} en ${event.venueName}. Compra tus tickets en EventPass.`,
@@ -52,12 +45,15 @@ export async function generateMetadata({
   };
 }
 
-// Componente dinámico: streaming mientras el shell ya está visible
-// getTicketTypes también cacheada — no duplica la query entre renders
 async function TicketAvailability({ eventId }: { eventId: string }) {
   const types = await getTicketTypes(eventId);
   return <TicketSelector ticketTypes={types} eventId={eventId} />;
 }
+
+const CATEGORY_LABEL: Record<string, string> = {
+  MUSIC: "Música", THEATER: "Teatro", SPORTS: "Deportes",
+  WORKSHOP: "Taller", PARTY: "Fiesta", OTHER: "Evento",
+};
 
 export default async function EventDetailPage({
   params,
@@ -65,74 +61,134 @@ export default async function EventDetailPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-
-  // getEventBySlug: primera vez → query a Neon; siguientes requests → del cache
   const row = await getEventBySlug(slug);
   if (!row) notFound();
 
-  // after(): se ejecuta DESPUÉS de enviar la respuesta HTML al cliente
-  // El usuario ya tiene la página — esto no bloquea ni retrasa nada
-  // Ideal para analytics, logs, contadores de vistas, webhooks secundarios
-  after(async () => {
-    await trackEventView(row.events.id, slug);
-  });
+  after(async () => { await trackEventView(row.events.id, slug); });
 
   const { events: event, organizers: organizer } = row;
 
   return (
-    <div className="max-w-4xl mx-auto px-4 py-10 space-y-8">
-      {/* Cover image — static shell */}
-      {event.coverUrl && (
-        <div className="relative h-64 w-full rounded-2xl overflow-hidden">
+    <div className="min-h-screen">
+      {/* ── Hero ──────────────────────────────────────────────────── */}
+      <section className="relative h-[62vh] min-h-[420px] w-full overflow-hidden">
+        {event.coverUrl ? (
           <Image
             src={event.coverUrl}
             alt={event.title}
             fill
-            className="object-cover"
+            className="object-cover scale-105"
             priority
           />
-        </div>
-      )}
+        ) : (
+          <div className="absolute inset-0 mesh-bg" />
+        )}
 
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-        {/* Info del evento — static shell */}
-        <div className="md:col-span-2 space-y-4">
-          <div className="flex items-center gap-2 flex-wrap">
-            <Badge variant="secondary">{event.category}</Badge>
-            {event.isFeatured && <Badge className="bg-yellow-400 text-yellow-900">Destacado</Badge>}
-          </div>
-          <h1 className="text-3xl font-bold">{event.title}</h1>
-          <div className="text-muted-foreground space-y-1 text-sm">
-            <p>
-              📅{" "}
-              {format(new Date(event.startsAt), "EEEE d 'de' MMMM 'a las' HH:mm", {
-                locale: es,
-              })}
-            </p>
-            <p>📍 {event.venueName} — {event.venueAddress}</p>
-            {organizer && <p>🎤 Organizado por {organizer.orgName}</p>}
-          </div>
-          {event.description && (
-            <p className="text-sm leading-relaxed">{event.description}</p>
-          )}
-        </div>
+        {/* Gradient overlay */}
+        <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/50 to-black/10" />
+        <div className="absolute inset-0 bg-gradient-to-r from-black/40 to-transparent" />
 
-        {/* Tickets — parte dinámica: Suspense hace streaming */}
-        <div>
-          <Suspense
-            fallback={
-              <div className="space-y-3 p-4 border rounded-xl">
-                <Skeleton className="h-6 w-1/2" />
-                <Skeleton className="h-12 w-full" />
-                <Skeleton className="h-12 w-full" />
-                <Skeleton className="h-10 w-full" />
+        {/* Hero content */}
+        <div className="absolute bottom-0 left-0 right-0 px-4 pb-10 sm:px-8 animate-ticket-enter">
+          <div className="max-w-7xl mx-auto">
+            <div className="flex items-center gap-2 flex-wrap mb-3">
+              <Badge className="bg-white/15 text-white border-white/25 backdrop-blur-sm text-xs">
+                {CATEGORY_LABEL[event.category] ?? event.category}
+              </Badge>
+              {event.isFeatured && (
+                <Badge className="bg-yellow-400/90 text-yellow-900 text-xs font-semibold">
+                  ⭐ Destacado
+                </Badge>
+              )}
+              <Badge
+                className={
+                  event.status === "PUBLISHED"
+                    ? "bg-emerald-500/20 text-emerald-300 border-emerald-500/30 text-xs"
+                    : "bg-red-500/20 text-red-300 border-red-500/30 text-xs"
+                }
+              >
+                {event.status === "PUBLISHED" ? "Disponible" : event.status}
+              </Badge>
+            </div>
+
+            <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold text-white leading-tight mb-4 max-w-2xl">
+              {event.title}
+            </h1>
+
+            <div className="flex flex-wrap gap-4 text-sm text-white/80">
+              <span className="flex items-center gap-1.5">
+                <CalendarDays className="size-4 text-violet-300" />
+                {format(new Date(event.startsAt), "EEEE d 'de' MMMM · HH:mm", { locale: es })}
+              </span>
+              <span className="flex items-center gap-1.5">
+                <MapPin className="size-4 text-fuchsia-300" />
+                {event.venueName}
+              </span>
+              {organizer && (
+                <span className="flex items-center gap-1.5">
+                  <Mic2 className="size-4 text-pink-300" />
+                  {organizer.orgName}
+                </span>
+              )}
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ── Body ──────────────────────────────────────────────────── */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-8 py-10">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+
+          {/* Description */}
+          <div className="lg:col-span-2 space-y-6 animate-in fade-in slide-in-from-bottom-4 duration-700 delay-150">
+            {event.description && (
+              <div>
+                <h2 className="text-lg font-semibold mb-2">Acerca del evento</h2>
+                <p className="text-muted-foreground leading-relaxed">{event.description}</p>
               </div>
-            }
-          >
-            <TicketAvailability eventId={event.id} />
-          </Suspense>
+            )}
+
+            {/* Location card */}
+            <div className="rounded-2xl border border-border/60 p-5 bg-card space-y-2">
+              <h3 className="font-semibold text-sm flex items-center gap-2">
+                <MapPin className="size-4 text-fuchsia-500" /> Ubicación
+              </h3>
+              <p className="font-medium">{event.venueName}</p>
+              <p className="text-sm text-muted-foreground">{event.venueAddress}</p>
+            </div>
+
+            {/* Date card */}
+            <div className="rounded-2xl border border-border/60 p-5 bg-card space-y-1">
+              <h3 className="font-semibold text-sm flex items-center gap-2">
+                <CalendarDays className="size-4 text-violet-500" /> Fecha y hora
+              </h3>
+              <p className="font-medium capitalize">
+                {format(new Date(event.startsAt), "EEEE d 'de' MMMM 'de' yyyy", { locale: es })}
+              </p>
+              <p className="text-sm text-muted-foreground">
+                {format(new Date(event.startsAt), "HH:mm", { locale: es })}
+                {event.endsAt && ` — ${format(new Date(event.endsAt), "HH:mm", { locale: es })}`}
+              </p>
+            </div>
+          </div>
+
+          {/* Ticket selector — sticky on desktop */}
+          <div className="lg:sticky lg:top-24 h-fit animate-in fade-in slide-in-from-bottom-4 duration-700 delay-300">
+            <Suspense
+              fallback={
+                <div className="space-y-3 p-5 rounded-2xl border border-border/60 bg-card">
+                  <Skeleton className="h-5 w-24" />
+                  <Skeleton className="h-14 w-full rounded-xl" />
+                  <Skeleton className="h-14 w-full rounded-xl" />
+                  <Skeleton className="h-11 w-full rounded-xl" />
+                </div>
+              }
+            >
+              <TicketAvailability eventId={event.id} />
+            </Suspense>
+          </div>
         </div>
-      </div>
+      </section>
     </div>
   );
 }
