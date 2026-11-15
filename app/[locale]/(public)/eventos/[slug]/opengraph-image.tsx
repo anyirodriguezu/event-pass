@@ -5,7 +5,6 @@ import { db } from "@/lib/db";
 import { events } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 
-export const runtime = "edge";
 export const alt = "EventPass";
 export const size = { width: 1200, height: 630 };
 export const contentType = "image/png";

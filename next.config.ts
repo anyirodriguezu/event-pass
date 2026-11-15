@@ -4,8 +4,10 @@ import createNextIntlPlugin from "next-intl/plugin";
 const withNextIntl = createNextIntlPlugin("./i18n/request.ts");
 
 const nextConfig: NextConfig = {
-  // PPR en Next.js 16: experimental.ppr fue renombrado a cacheComponents
-  cacheComponents: true, // opt-in por página con export const experimental_ppr = true
+  // PPR en Next.js 16: cacheComponents habilita Partial Prerendering globalmente.
+  // partialPrefetching mejora la navegación prefetcheando solo el shell estático.
+  cacheComponents: true,
+  partialPrefetching: true,
   images: {
     remotePatterns: [
       {

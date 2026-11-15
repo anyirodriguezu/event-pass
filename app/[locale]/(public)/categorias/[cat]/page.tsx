@@ -9,7 +9,6 @@ import { eq, and, desc } from "drizzle-orm";
 import { EventCard } from "@/components/events/EventCard";
 import Link from "next/link";
 
-export const revalidate = 300;
 
 const CATEGORIES = {
   music:    { label: "Música",    value: "MUSIC",    icon: "🎵" },

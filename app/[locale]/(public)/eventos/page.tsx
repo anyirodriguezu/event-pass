@@ -13,8 +13,6 @@ export const metadata: Metadata = {
   description: "Descubre los mejores eventos cerca de ti",
 };
 
-// revalidate como fallback — unstable_cache ya maneja la invalidación por tags
-export const revalidate = 300;
 
 async function EventsList({ category }: { category?: string }) {
   // getPublishedEvents está cacheada — no hace query a Neon si el cache está vigente

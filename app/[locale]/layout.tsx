@@ -3,10 +3,10 @@ import { getMessages } from "next-intl/server";
 import { notFound } from "next/navigation";
 import { routing } from "@/i18n/routing";
 
-// Este layout envuelve todas las páginas públicas con el contexto de i18n.
-// getMessages() carga el JSON del locale activo (es.json o en.json).
-// NextIntlClientProvider lo inyecta en el árbol — disponible en Client Components
-// con useTranslations() y en Server Components con getTranslations().
+export function generateStaticParams() {
+  return routing.locales.map((locale) => ({ locale }));
+}
+
 export default async function LocaleLayout({
   children,
   params,

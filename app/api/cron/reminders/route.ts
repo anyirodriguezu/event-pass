@@ -7,7 +7,6 @@ import { eq, and, gte, lt } from "drizzle-orm";
 import { sendEventReminder } from "@/lib/email";
 import { NextRequest, NextResponse } from "next/server";
 
-export const runtime = "nodejs";
 
 export async function GET(req: NextRequest) {
   // Vercel Cron envía este header para autenticar — protege la ruta de llamadas externas

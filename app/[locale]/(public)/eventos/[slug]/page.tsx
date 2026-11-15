@@ -5,7 +5,7 @@ import Image from "next/image";
 import Link from "next/link";
 import { db } from "@/lib/db";
 import { events } from "@/lib/db/schema";
-import { eq, or } from "drizzle-orm";
+import { eq } from "drizzle-orm";
 import { draftMode } from "next/headers";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
@@ -17,18 +17,9 @@ import { after, connection } from "next/server";
 import { trackEventView } from "@/lib/analytics";
 import { CalendarDays, MapPin, Mic2, Eye, EyeOff } from "lucide-react";
 
-// PPR: el shell estático se genera en build time y se sirve desde el CDN de Vercel.
-// El bloque dinámico (disponibilidad de tickets) hace streaming al momento del request.
-// Resultado: TTFB ultra rápido + stock siempre fresco, sin elegir entre los dos.
-export const experimental_ppr = true;
+// PPR habilitado globalmente via cacheComponents:true en next.config.ts.
+// Los Suspense boundaries definen qué es estático (shell) y qué hace streaming (dinámico).
 
-export async function generateStaticParams() {
-  const publishedEvents = await db
-    .select({ slug: events.slug })
-    .from(events)
-    .where(eq(events.status, "PUBLISHED"));
-  return publishedEvents.map((e) => ({ slug: e.slug }));
-}
 
 export async function generateMetadata({
   params,
