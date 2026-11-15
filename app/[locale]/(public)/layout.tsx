@@ -92,9 +92,9 @@ export default async function PublicLayout({
           <div className="space-y-3">
             <p className="text-sm font-semibold">Plataforma</p>
             <ul className="space-y-2 text-sm text-muted-foreground">
-              <li><Link href="#" className="hover:text-foreground transition-colors">Términos de uso</Link></li>
-              <li><Link href="#" className="hover:text-foreground transition-colors">Privacidad</Link></li>
-              <li><Link href="#" className="hover:text-foreground transition-colors">Soporte</Link></li>
+              <li><Link href="/terminos" className="hover:text-foreground transition-colors">Términos de uso</Link></li>
+              <li><Link href="/privacidad" className="hover:text-foreground transition-colors">Privacidad</Link></li>
+              <li><Link href="/soporte" className="hover:text-foreground transition-colors">Soporte</Link></li>
             </ul>
           </div>
         </div>
