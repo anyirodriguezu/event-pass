@@ -50,11 +50,18 @@ export default async function EditEventPage({
             <Link href={`/organizer/${eventId}/asistentes`}>👥 Asistentes</Link>
           </Button>
           {event.status === "DRAFT" && (
-            <form action={publishEvent.bind(null, eventId)}>
-              <Button type="submit" variant="success" size="sm">
-                Publicar evento
+            <>
+              <Button asChild variant="outline" size="sm">
+                <Link href={`/api/draft/enable?slug=${event.slug}`}>
+                  👁 Previsualizar
+                </Link>
               </Button>
-            </form>
+              <form action={publishEvent.bind(null, eventId)}>
+                <Button type="submit" variant="success" size="sm">
+                  Publicar evento
+                </Button>
+              </form>
+            </>
           )}
           {event.status === "PUBLISHED" && (
             <Button asChild variant="outline" size="sm">

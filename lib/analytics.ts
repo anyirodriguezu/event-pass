@@ -26,14 +26,3 @@ export async function trackEventCreated(eventId: string, slug: string, organizer
   );
 }
 
-export async function trackTicketPurchased(eventId: string, quantity: number, totalAmount: number) {
-  console.log(
-    JSON.stringify({
-      event: "ticket_purchased",
-      eventId,
-      quantity,
-      totalAmount,
-      timestamp: new Date().toISOString(),
-    })
-  );
-}

@@ -2,20 +2,25 @@ import type { Metadata } from "next";
 import { Suspense } from "react";
 import { notFound } from "next/navigation";
 import Image from "next/image";
+import Link from "next/link";
 import { db } from "@/lib/db";
 import { events } from "@/lib/db/schema";
-import { eq } from "drizzle-orm";
+import { eq, or } from "drizzle-orm";
+import { draftMode } from "next/headers";
 import { Badge } from "@/components/ui/badge";
 import { Skeleton } from "@/components/ui/skeleton";
 import { TicketSelector } from "@/components/tickets/TicketSelector";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { getEventBySlug, getTicketTypes } from "@/lib/queries";
-import { after } from "next/server";
+import { after, connection } from "next/server";
 import { trackEventView } from "@/lib/analytics";
-import { CalendarDays, MapPin, Mic2 } from "lucide-react";
+import { CalendarDays, MapPin, Mic2, Eye, EyeOff } from "lucide-react";
 
-export const revalidate = 300;
+// PPR: el shell estático se genera en build time y se sirve desde el CDN de Vercel.
+// El bloque dinámico (disponibilidad de tickets) hace streaming al momento del request.
+// Resultado: TTFB ultra rápido + stock siempre fresco, sin elegir entre los dos.
+export const experimental_ppr = true;
 
 export async function generateStaticParams() {
   const publishedEvents = await db
@@ -46,6 +51,9 @@ export async function generateMetadata({
 }
 
 async function TicketAvailability({ eventId }: { eventId: string }) {
+  // connection() marca este componente como dinámico — se ejecuta en cada request.
+  // Sin esto, Next.js podría intentar prerenderizarlo en build time y cachear el stock.
+  await connection();
   const types = await getTicketTypes(eventId);
   return <TicketSelector ticketTypes={types} eventId={eventId} />;
 }
@@ -61,15 +69,41 @@ export default async function EventDetailPage({
   params: Promise<{ slug: string }>;
 }) {
   const { slug } = await params;
-  const row = await getEventBySlug(slug);
+  const { isEnabled: isDraft } = await draftMode();
+
+  // En Draft Mode consultamos la DB directamente (sin cache) para ver borradores.
+  // En modo normal usamos la query cacheada con unstable_cache.
+  let row = isDraft
+    ? await db.query.events
+        .findFirst({ where: eq(events.slug, slug) })
+        .then((e) => e ? { events: e, organizers: null } : null)
+    : await getEventBySlug(slug);
+
   if (!row) notFound();
 
-  after(async () => { await trackEventView(row.events.id, slug); });
+  after(async () => { await trackEventView(row!.events.id, slug); });
 
   const { events: event, organizers: organizer } = row;
 
   return (
     <div className="min-h-screen">
+      {/* ── Banner de Draft Mode ───────────────────────────────────── */}
+      {isDraft && (
+        <div className="sticky top-16 z-40 flex items-center justify-between gap-3 bg-amber-400 dark:bg-amber-500 px-4 py-2.5 text-amber-950 text-sm font-medium">
+          <span className="flex items-center gap-2">
+            <Eye className="size-4 shrink-0" />
+            Modo preview — este evento aún no está publicado y solo tú puedes verlo
+          </span>
+          <Link
+            href={`/api/draft/disable?back=/organizer/${row.events.id}`}
+            className="flex items-center gap-1.5 shrink-0 rounded-md bg-amber-950/15 hover:bg-amber-950/25 px-3 py-1 transition-colors text-xs"
+          >
+            <EyeOff className="size-3.5" />
+            Salir del preview
+          </Link>
+        </div>
+      )}
+
       {/* ── Hero ──────────────────────────────────────────────────── */}
       <section className="relative h-[62vh] min-h-[420px] w-full overflow-hidden">
         {event.coverUrl ? (

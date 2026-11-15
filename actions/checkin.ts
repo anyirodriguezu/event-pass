@@ -6,6 +6,50 @@ import { tickets } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
 
+export type ScanResult = {
+  valid: boolean;
+  message: string;
+  buyer?: string;
+  ticketType?: string;
+};
+
+// Server Action para el scanner — reemplaza el fetch al API route
+// Permite usar useOptimistic en el cliente sin perder la validación en servidor
+export async function validateTicketByQR(
+  qrCode: string,
+  eventId: string
+): Promise<ScanResult> {
+  const session = await auth();
+  if (!session || !["STAFF", "ADMIN", "ORGANIZER"].includes(session.user.role)) {
+    return { valid: false, message: "No autorizado" };
+  }
+
+  const ticket = await db.query.tickets.findFirst({
+    where: eq(tickets.qrCode, qrCode),
+    with: { ticketType: true, buyer: true },
+  });
+
+  if (!ticket) return { valid: false, message: "QR inválido" };
+  if (ticket.eventId !== eventId) return { valid: false, message: "Ticket de otro evento" };
+  if (ticket.status === "USED") return { valid: false, message: "Ticket ya fue usado" };
+  if (ticket.status !== "ACTIVE") return { valid: false, message: `Ticket ${ticket.status.toLowerCase()}` };
+
+  await db
+    .update(tickets)
+    .set({ status: "USED", checkedInAt: new Date(), checkedInBy: session.user.id })
+    .where(eq(tickets.id, ticket.id));
+
+  revalidatePath(`/staff/${eventId}/lista`);
+  revalidatePath(`/organizer/${eventId}/asistentes`);
+
+  return {
+    valid: true,
+    message: "Acceso permitido",
+    buyer: (ticket as any).buyer?.name ?? undefined,
+    ticketType: (ticket as any).ticketType?.name ?? undefined,
+  };
+}
+
 export async function checkInTicket(ticketId: string, eventId: string) {
   const session = await auth();
   if (!session || !["STAFF", "ADMIN", "ORGANIZER"].includes(session.user.role)) {

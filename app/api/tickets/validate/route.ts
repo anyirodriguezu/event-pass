@@ -15,13 +15,15 @@ export async function POST(req: NextRequest) {
   }
 
   // Rate limiting: máximo 20 scans por dispositivo por minuto (anti-fraude)
-  const deviceId = req.headers.get("x-device-id") ?? session.user.id;
-  const { success } = await getQrScanRateLimit().limit(deviceId);
-  if (!success) {
-    return NextResponse.json(
-      { error: "Demasiados escaneos. Espera un momento." },
-      { status: 429 }
-    );
+  if (process.env.UPSTASH_REDIS_REST_URL) {
+    const deviceId = req.headers.get("x-device-id") ?? session.user.id;
+    const { success } = await getQrScanRateLimit().limit(deviceId);
+    if (!success) {
+      return NextResponse.json(
+        { error: "Demasiados escaneos. Espera un momento." },
+        { status: 429 }
+      );
+    }
   }
 
   const { qrCode } = await req.json();

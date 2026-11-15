@@ -14,6 +14,4 @@ export async function getFlag<T>(key: string, defaultValue: T): Promise<T> {
   }
 }
 
-export const isMaintenanceMode  = () => getFlag("maintenance_mode", false);
-export const isPresaleMode      = () => getFlag("presale_mode", false);
-export const getMaxTicketsPerOrder = () => getFlag("max_tickets_per_order", 5);
+export const isMaintenanceMode = () => getFlag("maintenance_mode", false);

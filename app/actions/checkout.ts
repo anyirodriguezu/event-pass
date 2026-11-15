@@ -31,12 +31,14 @@ export async function processSimulatedPayment(
   const ticketTypeId = formData.get("ticketTypeId") as string;
   const quantity    = Math.max(1, parseInt(formData.get("quantity") as string));
 
-  // Rate limiting — máx 5 intentos cada 10 minutos por IP
-  const hdrs = await headers();
-  const ip   = hdrs.get("x-forwarded-for") ?? "anonymous";
-  const { success } = await getCheckoutRateLimit().limit(ip);
-  if (!success) {
-    return { error: "Demasiados intentos. Espera unos minutos." };
+  // Rate limiting — solo si Redis está configurado
+  if (process.env.UPSTASH_REDIS_REST_URL) {
+    const hdrs = await headers();
+    const ip   = hdrs.get("x-forwarded-for") ?? "anonymous";
+    const { success } = await getCheckoutRateLimit().limit(ip);
+    if (!success) {
+      return { error: "Demasiados intentos. Espera unos minutos." };
+    }
   }
 
   // Verificar disponibilidad

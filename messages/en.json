@@ -1,0 +1,46 @@
+{
+  "nav": {
+    "all": "All",
+    "music": "Music",
+    "theater": "Theater",
+    "sports": "Sports",
+    "parties": "Parties",
+    "events": "Events",
+    "workshop": "Workshops",
+    "other": "Other"
+  },
+  "landing": {
+    "badge": "The #1 ticket platform in Latin America",
+    "title": "Event tickets",
+    "titleHighlight": "without complications",
+    "subtitle": "Buy, sell and validate tickets with anti-fraud QR. For organizers, buyers and staff — all in one place, with Vercel Edge speed.",
+    "cta": "Browse events",
+    "ctaSecondary": "Create free account",
+    "statsEvents": "Events hosted",
+    "statsTickets": "Tickets sold",
+    "statsUptime": "Uptime on Vercel",
+    "statsEdge": "Edge validation",
+    "categoriesTitle": "Browse by category",
+    "viewAll": "View all →",
+    "featuresTitle": "Why EventPass?",
+    "featuresSubtitle": "Top-tier technology so events run without friction.",
+    "organizerTitle": "Hosting an event?",
+    "organizerSubtitle": "Create your event in minutes, sell tickets with anti-fraud QR and validate entries from any phone.",
+    "organizerCta": "Start free — no credit card"
+  },
+  "footer": {
+    "events": "Events",
+    "organizers": "Organizers",
+    "platform": "Platform",
+    "createEvent": "Create event",
+    "controlPanel": "Control panel",
+    "salesManagement": "Sales management",
+    "terms": "Terms of use",
+    "privacy": "Privacy",
+    "support": "Support"
+  },
+  "common": {
+    "loading": "Loading...",
+    "noEvents": "No events available in this category."
+  }
+}

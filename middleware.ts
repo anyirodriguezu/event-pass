@@ -1,9 +1,15 @@
 import { auth } from "@/lib/auth";
 import { NextResponse } from "next/server";
 import { get } from "@vercel/edge-config";
+import createMiddleware from "next-intl/middleware";
+import { routing } from "./i18n/routing";
 
 const authRoutes       = ["/dashboard", "/organizer", "/staff"];
 const publicOnlyRoutes = ["/login", "/register"];
+
+// Middleware de next-intl — detecta locale, normaliza URLs, setea la cookie de locale.
+// Solo corre en rutas que NO son auth/api (esas no están bajo [locale]).
+const intlMiddleware = createMiddleware(routing);
 
 export default auth(async (req) => {
   const { nextUrl, auth: session } = req;
@@ -26,6 +32,7 @@ export default auth(async (req) => {
   }
 
   // ── Auth guards ────────────────────────────────────────────────────────────
+  // Las rutas auth están fuera de [locale], siempre sin prefijo
   const isAuthRoute       = authRoutes.some((r) => nextUrl.pathname.startsWith(r));
   const isPublicOnlyRoute = publicOnlyRoutes.includes(nextUrl.pathname);
 
@@ -36,11 +43,25 @@ export default auth(async (req) => {
     return NextResponse.redirect(new URL("/dashboard", nextUrl));
   }
 
-  // ── Geo-routing ────────────────────────────────────────────────────────────
+  // ── Geo-routing header ─────────────────────────────────────────────────────
   const country = req.headers.get("x-vercel-ip-country");
+
+  // ── i18n routing para páginas públicas ────────────────────────────────────
+  // Las rutas auth/api/login no están bajo [locale] — las omitimos
+  const isExcluded =
+    isAuthRoute ||
+    nextUrl.pathname.startsWith("/api") ||
+    nextUrl.pathname === "/login" ||
+    nextUrl.pathname === "/mantenimiento";
+
+  if (!isExcluded) {
+    const intlResponse = intlMiddleware(req);
+    if (country) intlResponse.headers.set("x-country", country);
+    return intlResponse;
+  }
+
   const res = NextResponse.next();
   if (country) res.headers.set("x-country", country);
-
   return res;
 });
 

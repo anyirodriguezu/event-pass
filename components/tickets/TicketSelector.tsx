@@ -145,7 +145,7 @@ export function TicketSelector({
         {/* Trust badge */}
         <div className="flex items-center justify-center gap-1.5 text-xs text-muted-foreground pt-1">
           <ShieldCheck className="size-3.5 text-emerald-500" />
-          Pago seguro con Stripe · QR anti-fraude
+          Pago seguro · QR anti-fraude
         </div>
       </div>
     </div>

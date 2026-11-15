@@ -29,7 +29,7 @@ export function CheckoutForm({
         {loading ? (
           <span className="flex items-center gap-2">
             <Loader2 className="size-4 animate-spin" />
-            Redirigiendo a Stripe...
+            Cargando...
           </span>
         ) : (
           <>
@@ -42,7 +42,7 @@ export function CheckoutForm({
 
       <div className="flex items-center justify-center gap-2 text-xs text-muted-foreground">
         <ShieldCheck className="size-3.5 text-emerald-500" />
-        <span>Pago seguro procesado por Stripe</span>
+        <span>Pago seguro · QR anti-fraude</span>
       </div>
     </div>
   );

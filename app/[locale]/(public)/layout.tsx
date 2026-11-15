@@ -1,19 +1,24 @@
 import Link from "next/link";
 import { NavAuthButton } from "@/components/shared/NavAuthButton";
 import { NavLink } from "@/components/shared/NavLink";
+import { LocaleSwitcher } from "@/components/shared/LocaleSwitcher";
+import { getTranslations } from "next-intl/server";
 
-const CATEGORIES = [
-  { href: "/categorias/music",    label: "Música" },
-  { href: "/categorias/theater",  label: "Teatro" },
-  { href: "/categorias/sports",   label: "Deportes" },
-  { href: "/categorias/party",    label: "Fiestas" },
-];
-
-export default function PublicLayout({
+export default async function PublicLayout({
   children,
 }: {
   children: React.ReactNode;
 }) {
+  // getTranslations: versión de servidor de useTranslations — no necesita "use client"
+  const t = await getTranslations("nav");
+
+  const CATEGORIES = [
+    { href: "/categorias/music",   label: t("music") },
+    { href: "/categorias/theater", label: t("theater") },
+    { href: "/categorias/sports",  label: t("sports") },
+    { href: "/categorias/party",   label: t("parties") },
+  ];
+
   return (
     <div className="flex flex-col min-h-screen">
       {/* ── Navbar ───────────────────────────────────────────── */}
@@ -28,9 +33,9 @@ export default function PublicLayout({
             </span>
           </Link>
 
-          {/* Category links — hidden on mobile */}
+          {/* Category links */}
           <nav className="hidden md:flex items-center gap-1">
-            <NavLink href="/eventos">Todos</NavLink>
+            <NavLink href="/eventos">{t("all")}</NavLink>
             {CATEGORIES.map((c) => (
               <NavLink key={c.href} href={c.href}>
                 {c.label}
@@ -38,8 +43,11 @@ export default function PublicLayout({
             ))}
           </nav>
 
-          {/* Auth CTA */}
-          <NavAuthButton />
+          {/* Right side: locale switcher + auth */}
+          <div className="flex items-center gap-3">
+            <LocaleSwitcher />
+            <NavAuthButton />
+          </div>
         </div>
       </header>
 
@@ -60,7 +68,7 @@ export default function PublicLayout({
           </div>
 
           <div className="space-y-3">
-            <p className="text-sm font-semibold">Eventos</p>
+            <p className="text-sm font-semibold">{t("events")}</p>
             <ul className="space-y-2 text-sm text-muted-foreground">
               {CATEGORIES.map((c) => (
                 <li key={c.href}>
@@ -77,7 +85,7 @@ export default function PublicLayout({
             <ul className="space-y-2 text-sm text-muted-foreground">
               <li><Link href="/login" className="hover:text-foreground transition-colors">Crear evento</Link></li>
               <li><Link href="/organizer" className="hover:text-foreground transition-colors">Panel de control</Link></li>
-              <li><Link href="#" className="hover:text-foreground transition-colors">Integración Stripe</Link></li>
+              <li><Link href="#" className="hover:text-foreground transition-colors">Gestión de ventas</Link></li>
             </ul>
           </div>
 
