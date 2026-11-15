@@ -4,9 +4,8 @@ import createNextIntlPlugin from "next-intl/plugin";
 const withNextIntl = createNextIntlPlugin("./i18n/request.ts");
 
 const nextConfig: NextConfig = {
-  experimental: {
-    ppr: "incremental", // opt-in por página con export const experimental_ppr = true
-  },
+  // PPR en Next.js 16: experimental.ppr fue renombrado a cacheComponents
+  cacheComponents: true, // opt-in por página con export const experimental_ppr = true
   images: {
     remotePatterns: [
       {
