@@ -83,9 +83,9 @@ export default async function PublicLayout({
           <div className="space-y-3">
             <p className="text-sm font-semibold">Organizadores</p>
             <ul className="space-y-2 text-sm text-muted-foreground">
-              <li><Link href="/login" className="hover:text-foreground transition-colors">Crear evento</Link></li>
-              <li><Link href="/organizer" className="hover:text-foreground transition-colors">Panel de control</Link></li>
-              <li><Link href="#" className="hover:text-foreground transition-colors">Gestión de ventas</Link></li>
+              <li><Link href="/organizador/registro" className="hover:text-foreground transition-colors">Crear evento</Link></li>
+              <li><Link href="/organizador" className="hover:text-foreground transition-colors">Panel de control</Link></li>
+              <li><Link href="/organizador" className="hover:text-foreground transition-colors">Gestión de ventas</Link></li>
             </ul>
           </div>
 
@@ -99,7 +99,7 @@ export default async function PublicLayout({
           </div>
         </div>
         <div className="border-t border-border/60 max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between text-xs text-muted-foreground">
-          <p>© {new Date().getFullYear()} EventPass</p>
+          <p>© 2026 EventPass</p>
           <p>Hecho con Next.js 16 · Vercel</p>
         </div>
       </footer>

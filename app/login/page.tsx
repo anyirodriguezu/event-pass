@@ -134,7 +134,7 @@ export default async function LoginPage({
           <span className="text-white/60 font-mono">ana@test.com</span> o{" "}
           <span className="text-white/60 font-mono">carlos@test.com</span>
           <br />
-          (cualquier contraseña)
+          contraseña: <span className="text-white/60 font-mono">demo1234</span>
         </p>
 
       </div>

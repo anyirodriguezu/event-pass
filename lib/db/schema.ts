@@ -59,6 +59,8 @@ export const users = pgTable("users", {
   email: text("email").notNull().unique(),
   emailVerified: timestamp("email_verified"),
   image: text("image"),
+  // Hash scrypt (formato "salt:hash") para login con credenciales. Null = solo OAuth.
+  passwordHash: text("password_hash"),
   role: roleEnum("role").notNull().default("BUYER"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });

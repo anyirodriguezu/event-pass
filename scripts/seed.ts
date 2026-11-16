@@ -4,6 +4,7 @@ loadEnvConfig(process.cwd());
 import { neon } from "@neondatabase/serverless";
 import { drizzle } from "drizzle-orm/neon-http";
 import * as schema from "../lib/db/schema";
+import { hashPassword } from "../lib/password";
 
 async function seed() {
   const sql = neon(process.env.DATABASE_URL!);
@@ -14,22 +15,30 @@ async function seed() {
 
   const { eq } = await import("drizzle-orm");
 
+  // Todos los usuarios demo comparten la contraseña "demo1234" (hasheada con scrypt).
+  const demoHash = await hashPassword("demo1234");
+
   // ── Usuarios ─────────────────────────────────────────────────────────────
   await db
     .insert(schema.users)
-    .values({ name: "Ana Comprador", email: "ana@test.com", role: "BUYER" })
+    .values({ name: "Ana Comprador", email: "ana@test.com", role: "BUYER", passwordHash: demoHash })
     .onConflictDoNothing();
 
   const [orgUser] = await db
     .insert(schema.users)
-    .values({ name: "Carlos Organizador", email: "carlos@test.com", role: "ORGANIZER" })
+    .values({ name: "Carlos Organizador", email: "carlos@test.com", role: "ORGANIZER", passwordHash: demoHash })
     .onConflictDoNothing()
     .returning();
 
   await db
     .insert(schema.users)
-    .values({ name: "Staff Entrada", email: "staff@test.com", role: "STAFF" })
+    .values({ name: "Staff Entrada", email: "staff@test.com", role: "STAFF", passwordHash: demoHash })
     .onConflictDoNothing();
+
+  // Asegura la contraseña demo también en usuarios que ya existían (insert la saltó).
+  for (const email of ["ana@test.com", "carlos@test.com", "staff@test.com"]) {
+    await db.update(schema.users).set({ passwordHash: demoHash }).where(eq(schema.users.email, email));
+  }
 
   console.log("✅ Usuarios creados");
 
@@ -205,7 +214,7 @@ async function seed() {
   console.log("   ana@test.com      → rol BUYER");
   console.log("   carlos@test.com   → rol ORGANIZER");
   console.log("   staff@test.com    → rol STAFF");
-  console.log("   (cualquier contraseña)");
+  console.log("   contraseña: demo1234");
   console.log("");
   console.log("🎟️  Eventos creados:");
   for (const e of insertedEvents) {

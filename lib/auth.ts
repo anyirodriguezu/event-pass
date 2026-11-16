@@ -5,6 +5,7 @@ import { DrizzleAdapter } from "@auth/drizzle-adapter";
 import { db } from "@/lib/db";
 import { users, accounts, sessions, verificationTokens } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
+import { verifyPassword } from "@/lib/password";
 
 export const { handlers, auth, signIn, signOut } = NextAuth({
   trustHost: true,
@@ -35,8 +36,13 @@ export const { handlers, auth, signIn, signOut } = NextAuth({
           .where(eq(users.email, credentials.email as string))
           .limit(1);
         const user = result[0];
-        console.log("[auth] buscando:", credentials.email, "| encontrado:", !!user);
         if (!user) return null;
+
+        // Verificación real de contraseña con scrypt — si el usuario no tiene
+        // passwordHash (cuenta solo-OAuth), no puede entrar por credenciales.
+        const ok = await verifyPassword(credentials.password as string, user.passwordHash);
+        if (!ok) return null;
+
         return user;
       },
     }),

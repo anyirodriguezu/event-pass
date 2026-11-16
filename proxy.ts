@@ -51,6 +51,7 @@ export default auth(async (req) => {
   const isExcluded =
     isAuthRoute ||
     nextUrl.pathname.startsWith("/api") ||
+    nextUrl.pathname.startsWith("/organizador") ||
     nextUrl.pathname === "/login" ||
     nextUrl.pathname === "/mantenimiento";
 

@@ -253,6 +253,36 @@
   50%  { transform: scale(1.12); }
   100% { transform: scale(1); }
 }
+@keyframes aurora-shift {
+  0%, 100% { background-position: 0% 50%; }
+  50%       { background-position: 100% 50%; }
+}
+@keyframes gradient-pan {
+  0%   { background-position: 0% 50%; }
+  100% { background-position: 200% 50%; }
+}
+@keyframes fade-up {
+  from { opacity: 0; transform: translateY(18px); }
+  to   { opacity: 1; transform: translateY(0); }
+}
+@keyframes bounce-in {
+  0%   { opacity: 0; transform: scale(0.8) translateY(10px); }
+  60%  { opacity: 1; transform: scale(1.04) translateY(-2px); }
+  100% { opacity: 1; transform: scale(1) translateY(0); }
+}
+@keyframes pulse-glow {
+  0%, 100% { box-shadow: 0 0 0 0 oklch(0.64 0.265 294 / 0.0); }
+  50%       { box-shadow: 0 0 26px 2px oklch(0.64 0.265 294 / 0.35); }
+}
+@keyframes blob-drift {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33%       { transform: translate(24px, -30px) scale(1.08); }
+  66%       { transform: translate(-20px, 18px) scale(0.95); }
+}
+@keyframes sheen {
+  0%   { transform: translateX(-120%) skewX(-18deg); }
+  100% { transform: translateX(220%)  skewX(-18deg); }
+}
 
 /* ─── Animation utilities ───────────────────────────────────────────── */
 .animate-glow-ring  { animation: glow-ring 2.4s ease-in-out infinite; }
@@ -267,3 +297,90 @@
 .confetti-a { animation: confetti-a 1s ease-out forwards; }
 .confetti-b { animation: confetti-b 1.2s ease-out forwards; }
 .confetti-c { animation: confetti-c 0.9s ease-out forwards; }
+
+/* Entrada con fade-up + stagger (usar --d para el delay en cascada) */
+.animate-fade-up  { animation: fade-up 0.6s cubic-bezier(0.16, 1, 0.3, 1) both; animation-delay: var(--d, 0ms); }
+.animate-bounce-in { animation: bounce-in 0.55s cubic-bezier(0.34, 1.56, 0.64, 1) both; animation-delay: var(--d, 0ms); }
+.animate-pulse-glow { animation: pulse-glow 2.6s ease-in-out infinite; }
+
+/* Texto con gradiente de marca EN MOVIMIENTO */
+.gradient-brand-animated {
+  background: linear-gradient(
+    90deg,
+    oklch(0.52 0.265 295),
+    oklch(0.70 0.260 325),
+    oklch(0.63 0.230 230),
+    oklch(0.70 0.260 325),
+    oklch(0.52 0.265 295)
+  );
+  background-size: 200% auto;
+  -webkit-background-clip: text;
+  background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: gradient-pan 4s linear infinite;
+}
+
+/* Fondo aurora animado — para heros / auth del organizador */
+.aurora-bg {
+  background-color: oklch(0.10 0.018 285);
+  background-image:
+    radial-gradient(ellipse 70% 55% at 15% 20%, oklch(0.52 0.265 295 / 0.40) 0%, transparent 55%),
+    radial-gradient(ellipse 65% 50% at 85% 25%, oklch(0.70 0.260 325 / 0.32) 0%, transparent 55%),
+    radial-gradient(ellipse 75% 60% at 50% 95%, oklch(0.63 0.230 230 / 0.28) 0%, transparent 55%);
+  background-size: 180% 180%;
+  animation: aurora-shift 14s ease-in-out infinite;
+}
+
+/* Blobs flotantes decorativos */
+.blob {
+  position: absolute;
+  border-radius: 9999px;
+  filter: blur(48px);
+  opacity: 0.55;
+  animation: blob-drift 16s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* Tarjeta con lift + sombra de color al hover */
+.card-lift {
+  transition: transform 0.28s cubic-bezier(0.16, 1, 0.3, 1), box-shadow 0.28s ease;
+  will-change: transform;
+}
+.card-lift:hover {
+  transform: translateY(-6px);
+  box-shadow: 0 18px 40px -12px oklch(0.52 0.265 295 / 0.45);
+}
+
+/* Borde con gradiente (padding-box + border-box trick) */
+.gradient-border {
+  position: relative;
+  background:
+    linear-gradient(var(--card), var(--card)) padding-box,
+    linear-gradient(135deg, oklch(0.52 0.265 295), oklch(0.70 0.260 325)) border-box;
+  border: 1.5px solid transparent;
+}
+
+/* Botón/elemento con destello que cruza al hover */
+.sheen {
+  position: relative;
+  overflow: hidden;
+}
+.sheen::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  width: 40%;
+  background: linear-gradient(90deg, transparent, oklch(1 0 0 / 0.35), transparent);
+  transform: translateX(-120%) skewX(-18deg);
+}
+.sheen:hover::after {
+  animation: sheen 0.9s ease;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .aurora-bg, .gradient-brand-animated, .blob,
+  .animate-fade-up, .animate-bounce-in, .animate-pulse-glow,
+  .animate-float, .animate-glow-ring {
+    animation: none !important;
+  }
+}
