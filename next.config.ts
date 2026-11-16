@@ -18,6 +18,10 @@ const nextConfig: NextConfig = {
         protocol: "https",
         hostname: "lh3.googleusercontent.com", // Google avatars (NextAuth)
       },
+      {
+        protocol: "https",
+        hostname: "images.unsplash.com", // Seed data cover images
+      },
     ],
   },
   turbopack: {
