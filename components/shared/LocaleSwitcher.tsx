@@ -16,8 +16,12 @@ export function LocaleSwitcher() {
   const switchLocale = (next: "es" | "en") => {
     if (next === locale) return;
     startTransition(() => {
-      // router.replace de next-intl cambia el locale manteniendo la misma ruta
+      // router.replace de next-intl cambia el locale manteniendo la misma ruta.
       router.replace(pathname, { locale: next });
+      // refresh() invalida el Router Cache del cliente y vuelve a pedir los
+      // Server Components con el nuevo locale; sin esto el contenido queda en el
+      // idioma anterior hasta un F5 (por el caché de navegación de Next).
+      router.refresh();
     });
   };
 
