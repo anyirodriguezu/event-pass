@@ -42,3 +42,7 @@ next-env.d.ts
 
 neon.txt
 image.png
+
+# instrucciones locales para Claude (no subir)
+CLAUDE.md
+.claude/
