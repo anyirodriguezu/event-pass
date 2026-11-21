@@ -1,10 +1,11 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { tickets, events, ticketTypes } from "@/lib/db/schema";
-import { eq, and } from "drizzle-orm";
+import { tickets, events, ticketTypes, orders, refunds } from "@/lib/db/schema";
+import { eq, and, ne } from "drizzle-orm";
 import { notFound } from "next/navigation";
 import { TicketQR } from "@/components/tickets/TicketQR";
 import { TransferButton } from "@/components/tickets/TransferButton";
+import { RefundButton } from "@/components/tickets/RefundButton";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { CalendarDays, MapPin, ArrowLeft } from "lucide-react";
@@ -43,6 +44,12 @@ export default async function TicketDetailPage({
   const { ticket, event, ticketType } = result[0];
   const status = STATUS_CONFIG[ticket.status] ?? STATUS_CONFIG.ACTIVE;
   const isActive = ticket.status === "ACTIVE";
+
+  // Estado de reembolso de la ORDEN del ticket (un reembolso aplica a toda la compra).
+  const order = await db.query.orders.findFirst({ where: eq(orders.id, ticket.orderId) });
+  const activeRefund = await db.query.refunds.findFirst({
+    where: and(eq(refunds.orderId, ticket.orderId), ne(refunds.status, "REJECTED")),
+  });
 
   return (
     <div className="max-w-sm mx-auto space-y-4 animate-in fade-in slide-in-from-bottom-4 duration-500">
@@ -109,6 +116,17 @@ export default async function TicketDetailPage({
 
       {/* Transfer */}
       {isActive && <TransferButton ticketId={ticket.id} />}
+
+      {/* Reembolso — a nivel de orden */}
+      {activeRefund ? (
+        <div className="rounded-lg border border-border/60 bg-muted/30 px-4 py-3 text-sm text-center text-muted-foreground">
+          {activeRefund.status === "PENDING"
+            ? "⏳ Reembolso solicitado — en revisión por un administrador."
+            : "✓ Reembolso aprobado. El pago fue devuelto."}
+        </div>
+      ) : (
+        order?.status === "PAID" && <RefundButton orderId={order.id} />
+      )}
     </div>
   );
 }
