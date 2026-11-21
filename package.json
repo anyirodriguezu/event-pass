@@ -10,7 +10,8 @@
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",
-    "seed": "npx tsx scripts/seed.ts"
+    "seed": "npx tsx scripts/seed.ts",
+    "make-admin": "npx tsx scripts/make-admin.ts"
   },
   "dependencies": {
     "@auth/drizzle-adapter": "^1.11.3",
