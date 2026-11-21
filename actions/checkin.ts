@@ -5,6 +5,7 @@ import { db } from "@/lib/db";
 import { tickets } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { revalidatePath } from "next/cache";
+import { canManageEvent } from "@/lib/authz";
 
 export type ScanResult = {
   valid: boolean;
@@ -21,6 +22,11 @@ export async function validateTicketByQR(
 ): Promise<ScanResult> {
   const session = await auth();
   if (!session || !["STAFF", "ADMIN", "ORGANIZER"].includes(session.user.role)) {
+    return { valid: false, message: "No autorizado" };
+  }
+
+  // Un ORGANIZER solo puede validar tickets de sus propios eventos.
+  if (!(await canManageEvent(session.user, eventId))) {
     return { valid: false, message: "No autorizado" };
   }
 
@@ -53,6 +59,11 @@ export async function validateTicketByQR(
 export async function checkInTicket(ticketId: string, eventId: string) {
   const session = await auth();
   if (!session || !["STAFF", "ADMIN", "ORGANIZER"].includes(session.user.role)) {
+    throw new Error("No autorizado");
+  }
+
+  // Un ORGANIZER solo puede hacer check-in en sus propios eventos.
+  if (!(await canManageEvent(session.user, eventId))) {
     throw new Error("No autorizado");
   }
 

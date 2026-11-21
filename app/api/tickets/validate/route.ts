@@ -5,11 +5,13 @@ import { eq } from "drizzle-orm";
 import { getQrScanRateLimit } from "@/lib/redis";
 import { NextRequest, NextResponse } from "next/server";
 import { auth } from "@/lib/auth";
+import { canManageEvent } from "@/lib/authz";
 
 
 export async function POST(req: NextRequest) {
+  // Mismas reglas que la Server Action validateTicketByQR: STAFF/ADMIN/ORGANIZER.
   const session = await auth();
-  if (!session || !["STAFF", "ADMIN"].includes(session.user.role)) {
+  if (!session || !["STAFF", "ADMIN", "ORGANIZER"].includes(session.user.role)) {
     return NextResponse.json({ error: "No autorizado" }, { status: 401 });
   }
 
@@ -40,6 +42,11 @@ export async function POST(req: NextRequest) {
       { valid: false, message: "QR inválido" },
       { status: 200 }
     );
+  }
+
+  // Un ORGANIZER solo puede validar tickets de sus propios eventos.
+  if (!(await canManageEvent(session.user, ticket.eventId))) {
+    return NextResponse.json({ error: "No autorizado" }, { status: 403 });
   }
 
   if (ticket.status === "USED") {

@@ -9,6 +9,7 @@ import { after } from "next/server";
 import { trackEventCreated } from "@/lib/analytics";
 import { redirect } from "next/navigation";
 import { uploadEventCover } from "@/lib/blob";
+import { organizerOwnsEvent } from "@/lib/authz";
 import { z } from "zod";
 
 const EventSchema = z.object({
@@ -96,6 +97,11 @@ export async function publishEvent(eventId: string) {
   const session = await auth();
   if (!session || session.user.role !== "ORGANIZER") throw new Error("No autorizado");
 
+  // Verifica que el evento sea de este organizador (evita IDOR).
+  if (!(await organizerOwnsEvent(session.user.id, eventId))) {
+    throw new Error("No autorizado");
+  }
+
   await db
     .update(events)
     .set({ status: "PUBLISHED" })
@@ -115,6 +121,11 @@ export async function publishEvent(eventId: string) {
 export async function addTicketType(eventId: string, formData: FormData) {
   const session = await auth();
   if (!session || session.user.role !== "ORGANIZER") throw new Error("No autorizado");
+
+  // Verifica que el evento sea de este organizador (evita IDOR).
+  if (!(await organizerOwnsEvent(session.user.id, eventId))) {
+    throw new Error("No autorizado");
+  }
 
   await db.insert(ticketTypes).values({
     eventId,

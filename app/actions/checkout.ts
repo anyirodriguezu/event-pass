@@ -5,7 +5,7 @@
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
 import { orders, tickets, ticketTypes, users, events } from "@/lib/db/schema";
-import { eq, sql } from "drizzle-orm";
+import { eq, and, sql } from "drizzle-orm";
 import { redirect } from "next/navigation";
 import { headers } from "next/headers";
 import { createHmac, randomBytes } from "crypto";
@@ -49,10 +49,26 @@ export async function processSimulatedPayment(
 
   if (!event || !ticketType) return { error: "Evento o ticket no encontrado." };
 
-  const available = ticketType.totalQuantity - ticketType.soldQuantity;
-  if (quantity > available) return { error: "No hay suficientes tickets disponibles." };
-
   const totalAmount = (Number(ticketType.price) * quantity).toFixed(2);
+
+  // Reserva atómica de stock: el driver neon-http no soporta transacciones
+  // interactivas, así que incrementamos soldQuantity con un UPDATE condicional
+  // (... <= totalQuantity) en una sola sentencia. Si no afecta filas, no había
+  // stock suficiente — esto evita el oversell bajo compras concurrentes.
+  const reserved = await db
+    .update(ticketTypes)
+    .set({ soldQuantity: sql`${ticketTypes.soldQuantity} + ${quantity}` })
+    .where(
+      and(
+        eq(ticketTypes.id, ticketTypeId),
+        sql`${ticketTypes.soldQuantity} + ${quantity} <= ${ticketTypes.totalQuantity}`
+      )
+    )
+    .returning({ id: ticketTypes.id });
+
+  if (reserved.length === 0) {
+    return { error: "No hay suficientes tickets disponibles." };
+  }
 
   // Crear orden
   const [order] = await db
@@ -79,11 +95,7 @@ export async function processSimulatedPayment(
     })
   );
 
-  // Actualizar contador de vendidos
-  await db
-    .update(ticketTypes)
-    .set({ soldQuantity: sql`${ticketTypes.soldQuantity} + ${quantity}` })
-    .where(eq(ticketTypes.id, ticketTypeId));
+  // (El contador de vendidos ya se incrementó en la reserva atómica de arriba.)
 
   // Email de confirmación — usamos qrserver.com para generar la imagen del QR
   const buyer = await db.query.users.findFirst({ where: eq(users.id, session.user.id) });

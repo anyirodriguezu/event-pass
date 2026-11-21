@@ -4,6 +4,7 @@ import { db } from "@/lib/db";
 import { tickets, users, ticketTypes } from "@/lib/db/schema";
 import { eq } from "drizzle-orm";
 import { NextRequest, NextResponse } from "next/server";
+import { canManageEvent } from "@/lib/authz";
 
 export async function GET(
   _req: NextRequest,
@@ -15,6 +16,11 @@ export async function GET(
   }
 
   const { eventId } = await params;
+
+  // Un ORGANIZER solo ve asistentes de sus propios eventos.
+  if (!(await canManageEvent(session.user, eventId))) {
+    return NextResponse.json({ error: "No autorizado" }, { status: 403 });
+  }
 
   const rows = await db
     .select({
