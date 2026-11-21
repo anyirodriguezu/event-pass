@@ -4,7 +4,7 @@ import { get } from "@vercel/edge-config";
 import createMiddleware from "next-intl/middleware";
 import { routing } from "./i18n/routing";
 
-const authRoutes       = ["/dashboard", "/organizer", "/staff", "/admin"];
+const authRoutes       = ["/dashboard", "/organizer", "/staff"];
 const publicOnlyRoutes = ["/login", "/register"];
 
 // Middleware de next-intl — detecta locale, normaliza URLs, setea la cookie de locale.
@@ -35,6 +35,10 @@ export default auth(async (req) => {
   // Las rutas auth están fuera de [locale], siempre sin prefijo
   const isAuthRoute       = authRoutes.some((r) => nextUrl.pathname.startsWith(r));
   const isPublicOnlyRoute = publicOnlyRoutes.includes(nextUrl.pathname);
+  // El área admin es un backoffice aparte: su propio layout decide el acceso
+  // (redirige a /admin/login si no hay sesión ADMIN). Aquí solo la excluimos
+  // de next-intl para que no la trate como ruta con prefijo de idioma.
+  const isAdminRoute      = nextUrl.pathname.startsWith("/admin");
 
   if (isAuthRoute && !isLoggedIn) {
     return NextResponse.redirect(new URL("/login", nextUrl));
@@ -50,6 +54,7 @@ export default auth(async (req) => {
   // Las rutas auth/api/login no están bajo [locale] — las omitimos
   const isExcluded =
     isAuthRoute ||
+    isAdminRoute ||
     nextUrl.pathname.startsWith("/api") ||
     nextUrl.pathname.startsWith("/organizador") ||
     nextUrl.pathname === "/login" ||

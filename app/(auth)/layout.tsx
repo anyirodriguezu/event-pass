@@ -47,9 +47,6 @@ export default async function AuthLayout({
             {(session.user.role === "STAFF" || session.user.role === "ADMIN") && (
               <NavLink href="/staff">Panel staff</NavLink>
             )}
-            {session.user.role === "ADMIN" && (
-              <NavLink href="/admin">Admin</NavLink>
-            )}
             <NavLink href="/eventos">Explorar eventos</NavLink>
           </nav>
 

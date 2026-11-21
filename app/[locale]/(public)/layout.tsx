@@ -95,6 +95,7 @@ export default async function PublicLayout({
               <li><Link href="/terminos" className="hover:text-foreground transition-colors">Términos de uso</Link></li>
               <li><Link href="/privacidad" className="hover:text-foreground transition-colors">Privacidad</Link></li>
               <li><Link href="/soporte" className="hover:text-foreground transition-colors">Soporte</Link></li>
+              <li><Link href="/admin/login" className="hover:text-foreground transition-colors">Acceso admin</Link></li>
             </ul>
           </div>
         </div>

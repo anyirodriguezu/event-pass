@@ -1,7 +1,5 @@
-// SSR — panel de administración. Datos globales en tiempo real (sin caché).
-// Solo accesible para rol ADMIN.
-import { auth } from "@/lib/auth";
-import { redirect } from "next/navigation";
+// SSR — dashboard del backoffice. Datos globales en tiempo real (sin caché).
+// El acceso (rol ADMIN) lo controla el layout del grupo (panel).
 import { db } from "@/lib/db";
 import { events, tickets, orders, users, organizers, refunds } from "@/lib/db/schema";
 import { eq, count, sum, asc, desc } from "drizzle-orm";
@@ -25,9 +23,6 @@ import type { Metadata } from "next";
 export const metadata: Metadata = { title: "Panel Admin" };
 
 export default async function AdminPage() {
-  const session = await auth();
-  if (!session || session.user.role !== "ADMIN") redirect("/dashboard");
-
   // Métricas globales — count()/sum() agregan en la DB, no en memoria.
   const [
     [{ v: totalEvents }],
@@ -73,10 +68,9 @@ export default async function AdminPage() {
 
   return (
     <div className="space-y-8">
-      {/* Header */}
       <div>
         <p className="text-sm text-muted-foreground">Administración</p>
-        <h1 className="font-heading font-bold text-3xl gradient-brand-text">Panel Admin</h1>
+        <h1 className="font-heading font-bold text-3xl gradient-brand-text">Resumen</h1>
       </div>
 
       {/* Métricas globales */}
@@ -133,7 +127,6 @@ export default async function AdminPage() {
                     </p>
                   </div>
 
-                  {/* Aprobar / revocar — Server Action con el nuevo valor horneado */}
                   <form action={setOrganizerVerified.bind(null, org.id, !org.verified)} className="shrink-0">
                     <Button
                       type="submit"
