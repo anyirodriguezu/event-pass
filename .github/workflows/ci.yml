@@ -1,0 +1,30 @@
+name: CI
+
+# Corre en cada push a main y en cada Pull Request.
+# No ejecuta `next build` aquí: el build necesita secretos (DATABASE_URL, etc.)
+# y Vercel ya lo hace en cada deploy. Aquí validamos tipos y tests unitarios,
+# que no requieren base de datos ni claves — 100% gratis en GitHub Actions.
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: npm
+
+      - name: Instalar dependencias
+        run: npm ci
+
+      - name: Typecheck
+        run: npm run typecheck
+
+      - name: Tests unitarios
+        run: npm test

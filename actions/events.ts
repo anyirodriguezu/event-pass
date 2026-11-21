@@ -10,6 +10,7 @@ import { trackEventCreated } from "@/lib/analytics";
 import { redirect } from "next/navigation";
 import { uploadEventCover } from "@/lib/blob";
 import { organizerOwnsEvent } from "@/lib/authz";
+import { slugify } from "@/lib/slug";
 import { z } from "zod";
 
 const EventSchema = z.object({
@@ -22,15 +23,6 @@ const EventSchema = z.object({
 });
 
 export type EventFormState = { error: string } | null;
-
-function slugify(text: string) {
-  return text
-    .toLowerCase()
-    .normalize("NFD")
-    .replace(/[̀-ͯ]/g, "")
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/(^-|-$)/g, "");
-}
 
 // Firma compatible con useActionState: (prevState, formData) => Promise<State>
 // redirect() en Server Actions termina la respuesta — Next.js lo maneja correctamente
