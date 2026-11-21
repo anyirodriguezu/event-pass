@@ -3,7 +3,6 @@ import { redirect } from "next/navigation";
 import Link from "next/link";
 import { signOut } from "@/lib/auth";
 import { NavLink } from "@/components/shared/NavLink";
-import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
 import {
   DropdownMenu,
@@ -47,6 +46,9 @@ export default async function AuthLayout({
             )}
             {(session.user.role === "STAFF" || session.user.role === "ADMIN") && (
               <NavLink href="/staff">Panel staff</NavLink>
+            )}
+            {session.user.role === "ADMIN" && (
+              <NavLink href="/admin">Admin</NavLink>
             )}
             <NavLink href="/eventos">Explorar eventos</NavLink>
           </nav>
