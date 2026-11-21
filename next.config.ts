@@ -32,6 +32,9 @@ const nextConfig: NextConfig = {
       },
     },
   },
+  experimental: {
+    agentUpgrade: "security",
+  },
 };
 
 export default withNextIntl(nextConfig);
