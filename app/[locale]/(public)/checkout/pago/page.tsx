@@ -1,4 +1,4 @@
-// Página de pago simulado — Server Component
+// Página de pago (Stripe Checkout, modo test) — Server Component
 // Carga datos en servidor, el formulario interactivo es un Client Component aparte
 import type { Metadata } from "next";
 import { auth } from "@/lib/auth";
@@ -53,9 +53,9 @@ export default async function PagoPage({
 
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold">Datos de pago</h1>
+        <h1 className="text-2xl font-bold">Pagar</h1>
         <p className="text-muted-foreground text-sm mt-1">
-          Simulación segura — sin cargos reales
+          Pago seguro con Stripe (modo test) — sin cargos reales
         </p>
       </div>
 

@@ -1,60 +1,58 @@
 "use server";
 
-// Server Action — procesa el pago simulado
-// Next.js ejecuta esto en el servidor: DB, email y rate limit sin exponer nada al cliente
+// Server Action — inicia el pago con Stripe Checkout (modo test).
+// Flujo: reserva stock + crea orden PENDING -> redirige a la página alojada de
+// Stripe -> el webhook (/api/webhooks/stripe) confirma el pago, marca la orden
+// PAID y genera los tickets. El dinero nunca se mueve en modo test.
 import { auth } from "@/lib/auth";
 import { db } from "@/lib/db";
-import { orders, tickets, ticketTypes, users, events } from "@/lib/db/schema";
+import { orders, ticketTypes, events } from "@/lib/db/schema";
 import { eq, and, sql } from "drizzle-orm";
 import { redirect } from "next/navigation";
+import { updateTag } from "next/cache";
 import { headers } from "next/headers";
-import { createHmac, randomBytes } from "crypto";
-import { sendTicketConfirmation } from "@/lib/email";
 import { getCheckoutRateLimit } from "@/lib/redis";
-
-function generateQRCode(ticketId: string): string {
-  return createHmac("sha256", process.env.AUTH_SECRET!)
-    .update(`${ticketId}-${randomBytes(16).toString("hex")}`)
-    .digest("hex");
-}
+import { getStripe } from "@/lib/stripe";
 
 type State = { error: string | null };
 
-export async function processSimulatedPayment(
+// Construye la URL base desde los headers de la request (local y Vercel).
+async function getBaseUrl(): Promise<string> {
+  const h = await headers();
+  const host = h.get("x-forwarded-host") ?? h.get("host") ?? "localhost:3000";
+  const proto = h.get("x-forwarded-proto") ?? (host.startsWith("localhost") ? "http" : "https");
+  return `${proto}://${host}`;
+}
+
+export async function createCheckoutSession(
   _prev: State,
   formData: FormData
 ): Promise<State> {
   const session = await auth();
-  if (!session) redirect("/login");
+  if (!session) redirect("/login?callbackUrl=/eventos");
 
-  const eventId     = formData.get("eventId") as string;
+  const eventId = formData.get("eventId") as string;
   const ticketTypeId = formData.get("ticketTypeId") as string;
-  const quantity    = Math.max(1, parseInt(formData.get("quantity") as string));
+  const quantity = Math.max(1, parseInt(formData.get("quantity") as string));
 
   // Rate limiting — solo si Redis está configurado
   if (process.env.UPSTASH_REDIS_REST_URL) {
     const hdrs = await headers();
-    const ip   = hdrs.get("x-forwarded-for") ?? "anonymous";
+    const ip = hdrs.get("x-forwarded-for") ?? "anonymous";
     const { success } = await getCheckoutRateLimit().limit(ip);
-    if (!success) {
-      return { error: "Demasiados intentos. Espera unos minutos." };
-    }
+    if (!success) return { error: "Demasiados intentos. Espera unos minutos." };
   }
 
-  // Verificar disponibilidad
   const [event, ticketType] = await Promise.all([
     db.query.events.findFirst({ where: eq(events.id, eventId) }),
     db.query.ticketTypes.findFirst({ where: eq(ticketTypes.id, ticketTypeId) }),
   ]);
-
   if (!event || !ticketType) return { error: "Evento o ticket no encontrado." };
 
   const totalAmount = (Number(ticketType.price) * quantity).toFixed(2);
 
-  // Reserva atómica de stock: el driver neon-http no soporta transacciones
-  // interactivas, así que incrementamos soldQuantity con un UPDATE condicional
-  // (... <= totalQuantity) en una sola sentencia. Si no afecta filas, no había
-  // stock suficiente — esto evita el oversell bajo compras concurrentes.
+  // Reserva atómica de stock: incrementa soldQuantity solo si hay cupo. Si no
+  // afecta filas, no había stock suficiente (evita oversell bajo concurrencia).
   const reserved = await db
     .update(ticketTypes)
     .set({ soldQuantity: sql`${ticketTypes.soldQuantity} + ${quantity}` })
@@ -70,48 +68,60 @@ export async function processSimulatedPayment(
     return { error: "No hay suficientes tickets disponibles." };
   }
 
-  // Crear orden
+  // La disponibilidad pública cambió al reservar: invalida las queries cacheadas.
+  // updateTag: invalidación inmediata (lee-tu-propio-write) desde Server Actions.
+  updateTag("events");
+
+  // Orden PENDING: el stock queda reservado hasta que el webhook la confirme
+  // o la sesión de Stripe expire (y entonces se libera).
   const [order] = await db
     .insert(orders)
-    .values({
-      buyerId:         session.user.id,
-      eventId,
-      status:          "PAID",
-      totalAmount,
-      paymentIntentId: `sim_${randomBytes(8).toString("hex")}`,
-    })
+    .values({ buyerId: session.user.id, eventId, status: "PENDING", totalAmount })
     .returning();
 
-  // Crear tickets individuales con QR único por cada uno
-  const newTickets = await Promise.all(
-    Array.from({ length: quantity }).map(async () => {
-      const ticketId = crypto.randomUUID();
-      const qrCode   = generateQRCode(ticketId);
-      const [ticket] = await db
-        .insert(tickets)
-        .values({ id: ticketId, orderId: order.id, ticketTypeId, eventId, buyerId: session.user.id, qrCode })
-        .returning();
-      return ticket;
-    })
-  );
+  const baseUrl = await getBaseUrl();
 
-  // (El contador de vendidos ya se incrementó en la reserva atómica de arriba.)
+  let checkoutUrl: string;
+  try {
+    const checkout = await getStripe().checkout.sessions.create({
+      mode: "payment",
+      line_items: [
+        {
+          quantity,
+          price_data: {
+            currency: ticketType.currency.toLowerCase(),
+            unit_amount: Math.round(Number(ticketType.price) * 100),
+            product_data: { name: `${event.title} — ${ticketType.name}` },
+          },
+        },
+      ],
+      client_reference_id: order.id,
+      metadata: {
+        orderId: order.id,
+        eventId,
+        ticketTypeId,
+        quantity: String(quantity),
+        buyerId: session.user.id,
+      },
+      success_url: `${baseUrl}/dashboard?success=1`,
+      cancel_url: `${baseUrl}/checkout?eventId=${eventId}&ticketTypeId=${ticketTypeId}&quantity=${quantity}`,
+    });
 
-  // Email de confirmación — usamos qrserver.com para generar la imagen del QR
-  const buyer = await db.query.users.findFirst({ where: eq(users.id, session.user.id) });
-  if (buyer?.email) {
-    const qrImageUrl = `https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=${newTickets[0].qrCode}`;
-    await sendTicketConfirmation({
-      to:         buyer.email,
-      buyerName:  buyer.name ?? "Comprador",
-      eventTitle: event.title,
-      eventDate:  new Date(event.startsAt).toLocaleDateString("es-PE"),
-      venueName:  event.venueName,
-      ticketType: ticketType.name,
-      qrUrl:      qrImageUrl,
-      ticketId:   newTickets[0].id,
-    }).catch(() => {}); // Email no bloquea el flujo si falla
+    if (!checkout.url) throw new Error("Stripe no devolvió una URL de checkout");
+
+    // Guarda el id de la sesión para trazabilidad / idempotencia del webhook.
+    await db.update(orders).set({ paymentIntentId: checkout.id }).where(eq(orders.id, order.id));
+    checkoutUrl = checkout.url;
+  } catch {
+    // Si Stripe falla, libera el stock reservado y cancela la orden.
+    await db
+      .update(ticketTypes)
+      .set({ soldQuantity: sql`${ticketTypes.soldQuantity} - ${quantity}` })
+      .where(eq(ticketTypes.id, ticketTypeId));
+    await db.update(orders).set({ status: "CANCELLED" }).where(eq(orders.id, order.id));
+    return { error: "No se pudo iniciar el pago. Intenta de nuevo." };
   }
 
-  redirect("/dashboard?success=1");
+  // redirect() soporta URLs externas: envía al usuario a la página de Stripe.
+  redirect(checkoutUrl);
 }
