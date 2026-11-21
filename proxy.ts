@@ -4,7 +4,7 @@ import { get } from "@vercel/edge-config";
 import createMiddleware from "next-intl/middleware";
 import { routing } from "./i18n/routing";
 
-const authRoutes       = ["/dashboard", "/organizer", "/staff"];
+const authRoutes       = ["/dashboard", "/organizer", "/staff", "/admin"];
 const publicOnlyRoutes = ["/login", "/register"];
 
 // Middleware de next-intl — detecta locale, normaliza URLs, setea la cookie de locale.
