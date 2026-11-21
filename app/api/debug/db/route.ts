@@ -5,8 +5,6 @@
 import { NextResponse } from "next/server";
 import { neon } from "@neondatabase/serverless";
 
-export const dynamic = "force-dynamic";
-
 export async function GET() {
   const url = process.env.DATABASE_URL ?? "";
   const host = url.match(/@([^/?]+)/)?.[1] ?? "desconocido";
