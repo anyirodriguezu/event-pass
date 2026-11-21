@@ -15,6 +15,13 @@ import { es } from "date-fns/locale";
 
 export const metadata: Metadata = { title: "Aceptar transferencia" };
 
+function getHoursLeft(expiresAt: Date) {
+  return Math.max(
+    0,
+    Math.floor((expiresAt.getTime() - Date.now()) / 3_600_000)
+  );
+}
+
 export default async function TransferPage({
   params,
 }: {
@@ -59,11 +66,8 @@ export default async function TransferPage({
     return <TransferError message="Ticket no encontrado." />;
   }
 
-  const { ticket, event, ticketType } = ticketData[0];
-  const hoursLeft = Math.max(
-    0,
-    Math.floor((transfer.expiresAt.getTime() - Date.now()) / 3_600_000)
-  );
+  const { event, ticketType } = ticketData[0];
+  const hoursLeft = getHoursLeft(transfer.expiresAt);
 
   return (
     <div className="max-w-md mx-auto px-4 py-10 space-y-6">

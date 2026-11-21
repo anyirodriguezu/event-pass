@@ -50,7 +50,6 @@ export async function initiateTransfer(ticketId: string) {
 // Next.js pasa FormData como segundo arg cuando se usa bind en server actions
 export async function acceptTransfer(
   token: string,
-  _formData?: FormData
 ): Promise<void> {
   const session = await auth();
   if (!session) throw new Error("No autenticado");
