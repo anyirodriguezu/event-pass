@@ -7,6 +7,7 @@ import { EventCard } from "@/components/events/EventCard";
 import { EventFilters } from "@/components/events/EventFilters";
 import { Skeleton } from "@/components/ui/skeleton";
 import { getPublishedEvents } from "@/lib/queries";
+import { getTranslations } from "next-intl/server";
 
 export const metadata: Metadata = {
   title: "Eventos",
@@ -23,12 +24,11 @@ async function EventsList({ category }: { category?: string }) {
     : rows;
 
   if (filtered.length === 0) {
+    const t = await getTranslations("common");
     return (
       <div className="text-center py-20">
         <p className="text-5xl mb-4">🔍</p>
-        <p className="text-muted-foreground">
-          No hay eventos disponibles en esta categoría.
-        </p>
+        <p className="text-muted-foreground">{t("noEvents")}</p>
       </div>
     );
   }
@@ -58,18 +58,17 @@ function EventsListSkeleton() {
   );
 }
 
-export default function EventosPage({
+export default async function EventosPage({
   searchParams,
 }: {
   searchParams: Promise<{ categoria?: string }>;
 }) {
+  const t = await getTranslations("eventsPage");
   return (
     <div className="max-w-7xl mx-auto px-4 sm:px-6 py-10 space-y-8">
       <div>
-        <h1 className="font-heading font-bold text-3xl sm:text-4xl">Eventos</h1>
-        <p className="text-muted-foreground mt-1">
-          Encuentra tu próxima experiencia
-        </p>
+        <h1 className="font-heading font-bold text-3xl sm:text-4xl">{t("title")}</h1>
+        <p className="text-muted-foreground mt-1">{t("subtitle")}</p>
       </div>
 
       <EventFilters />

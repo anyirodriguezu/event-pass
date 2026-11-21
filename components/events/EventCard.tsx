@@ -2,30 +2,39 @@ import Link from "next/link";
 import Image from "next/image";
 import { Card, CardContent } from "@/components/ui/card";
 import { format } from "date-fns";
-import { es } from "date-fns/locale";
+import { es, enUS } from "date-fns/locale";
+import { getTranslations, getLocale } from "next-intl/server";
 import type { events, organizers } from "@/lib/db/schema";
 import type { InferSelectModel } from "drizzle-orm";
 
 type Event = InferSelectModel<typeof events>;
 type Organizer = InferSelectModel<typeof organizers> | null;
 
-const CATEGORY_STYLES: Record<string, { label: string; chip: string }> = {
-  MUSIC:    { label: "Música",    chip: "bg-violet-100 text-violet-700" },
-  THEATER:  { label: "Teatro",    chip: "bg-amber-100  text-amber-700"  },
-  SPORTS:   { label: "Deportes",  chip: "bg-green-100  text-green-700"  },
-  WORKSHOP: { label: "Taller",    chip: "bg-blue-100   text-blue-700"   },
-  PARTY:    { label: "Fiesta",    chip: "bg-pink-100   text-pink-700"   },
-  OTHER:    { label: "Otro",      chip: "bg-gray-100   text-gray-600"   },
+// Color del chip por categoría (la etiqueta viene de las traducciones).
+const CATEGORY_CHIP: Record<string, string> = {
+  MUSIC:    "bg-violet-100 text-violet-700",
+  THEATER:  "bg-amber-100  text-amber-700",
+  SPORTS:   "bg-green-100  text-green-700",
+  WORKSHOP: "bg-blue-100   text-blue-700",
+  PARTY:    "bg-pink-100   text-pink-700",
+  OTHER:    "bg-gray-100   text-gray-600",
 };
 
-export function EventCard({
+export async function EventCard({
   event,
   organizer,
 }: {
   event: Event;
   organizer: Organizer;
 }) {
-  const cat = CATEGORY_STYLES[event.category] ?? CATEGORY_STYLES.OTHER;
+  const [t, tc, locale] = await Promise.all([
+    getTranslations("category"),
+    getTranslations("common"),
+    getLocale(),
+  ]);
+  const chip = CATEGORY_CHIP[event.category] ?? CATEGORY_CHIP.OTHER;
+  const catLabel = t(event.category.toLowerCase() as "music");
+  const dfLocale = locale === "en" ? enUS : es;
 
   return (
     <Link href={`/eventos/${event.slug}`} className="group block">
@@ -50,12 +59,12 @@ export function EventCard({
 
           {/* Badges on top-left */}
           <div className="absolute top-3 left-3 flex gap-1.5">
-            <span className={`text-xs font-semibold px-2.5 py-1 rounded-full backdrop-blur-sm ${cat.chip}`}>
-              {cat.label}
+            <span className={`text-xs font-semibold px-2.5 py-1 rounded-full backdrop-blur-sm ${chip}`}>
+              {catLabel}
             </span>
             {event.isFeatured && (
               <span className="text-xs font-semibold px-2.5 py-1 rounded-full bg-yellow-400 text-yellow-900">
-                ★ Destacado
+                ★ {tc("featured")}
               </span>
             )}
           </div>
@@ -63,7 +72,7 @@ export function EventCard({
           {/* Date pill on bottom-right */}
           <div className="absolute bottom-3 right-3">
             <span className="text-xs font-medium px-2.5 py-1 rounded-full bg-black/50 text-white backdrop-blur-sm">
-              {format(new Date(event.startsAt), "d MMM", { locale: es })}
+              {format(new Date(event.startsAt), "d MMM", { locale: dfLocale })}
             </span>
           </div>
         </div>

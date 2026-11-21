@@ -11,6 +11,7 @@ export default async function PublicLayout({
 }) {
   // getTranslations: versión de servidor de useTranslations — no necesita "use client"
   const t = await getTranslations("nav");
+  const tf = await getTranslations("footer");
 
   const CATEGORIES = [
     { href: "/categorias/music",   label: t("music") },
@@ -63,7 +64,7 @@ export default async function PublicLayout({
               <span className="font-heading font-bold gradient-brand-text">EventPass</span>
             </Link>
             <p className="text-sm text-muted-foreground leading-relaxed">
-              La plataforma de tickets con QR anti-fraude para Latinoamérica.
+              {tf("tagline")}
             </p>
           </div>
 
@@ -81,27 +82,27 @@ export default async function PublicLayout({
           </div>
 
           <div className="space-y-3">
-            <p className="text-sm font-semibold">Organizadores</p>
+            <p className="text-sm font-semibold">{tf("organizers")}</p>
             <ul className="space-y-2 text-sm text-muted-foreground">
-              <li><Link href="/organizador/registro" className="hover:text-foreground transition-colors">Crear evento</Link></li>
-              <li><Link href="/organizador" className="hover:text-foreground transition-colors">Panel de control</Link></li>
-              <li><Link href="/organizador" className="hover:text-foreground transition-colors">Gestión de ventas</Link></li>
+              <li><Link href="/organizador/registro" className="hover:text-foreground transition-colors">{tf("createEvent")}</Link></li>
+              <li><Link href="/organizador" className="hover:text-foreground transition-colors">{tf("controlPanel")}</Link></li>
+              <li><Link href="/organizador" className="hover:text-foreground transition-colors">{tf("salesManagement")}</Link></li>
             </ul>
           </div>
 
           <div className="space-y-3">
-            <p className="text-sm font-semibold">Plataforma</p>
+            <p className="text-sm font-semibold">{tf("platform")}</p>
             <ul className="space-y-2 text-sm text-muted-foreground">
-              <li><Link href="/terminos" className="hover:text-foreground transition-colors">Términos de uso</Link></li>
-              <li><Link href="/privacidad" className="hover:text-foreground transition-colors">Privacidad</Link></li>
-              <li><Link href="/soporte" className="hover:text-foreground transition-colors">Soporte</Link></li>
+              <li><Link href="/terminos" className="hover:text-foreground transition-colors">{tf("terms")}</Link></li>
+              <li><Link href="/privacidad" className="hover:text-foreground transition-colors">{tf("privacy")}</Link></li>
+              <li><Link href="/soporte" className="hover:text-foreground transition-colors">{tf("support")}</Link></li>
               <li><Link href="/admin/login" className="hover:text-foreground transition-colors">Acceso admin</Link></li>
             </ul>
           </div>
         </div>
         <div className="border-t border-border/60 max-w-7xl mx-auto px-4 sm:px-6 py-4 flex items-center justify-between text-xs text-muted-foreground">
           <p>© 2026 EventPass</p>
-          <p>Hecho con Next.js 16 · Vercel</p>
+          <p>{tf("madeWith")}</p>
         </div>
       </footer>
     </div>

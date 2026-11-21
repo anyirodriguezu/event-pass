@@ -28,7 +28,20 @@
     "organizerSubtitle": "Crea tu evento en minutos, vende tickets con QR anti-fraude y valida entradas desde cualquier celular.",
     "organizerCta": "Empezar gratis — sin tarjeta"
   },
+  "eventsPage": {
+    "title": "Eventos",
+    "subtitle": "Encuentra tu próxima experiencia"
+  },
+  "category": {
+    "music": "Música",
+    "theater": "Teatro",
+    "sports": "Deportes",
+    "workshop": "Taller",
+    "party": "Fiesta",
+    "other": "Otro"
+  },
   "footer": {
+    "tagline": "La plataforma de tickets con QR anti-fraude para Latinoamérica.",
     "events": "Eventos",
     "organizers": "Organizadores",
     "platform": "Plataforma",
@@ -37,10 +50,12 @@
     "salesManagement": "Gestión de ventas",
     "terms": "Términos de uso",
     "privacy": "Privacidad",
-    "support": "Soporte"
+    "support": "Soporte",
+    "madeWith": "Hecho con Next.js 16 · Vercel"
   },
   "common": {
     "loading": "Cargando...",
-    "noEvents": "No hay eventos disponibles en esta categoría."
+    "noEvents": "No hay eventos disponibles en esta categoría.",
+    "featured": "Destacado"
   }
 }
